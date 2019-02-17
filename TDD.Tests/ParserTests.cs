@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TDD.FileReader;
@@ -42,6 +41,19 @@ namespace TDD.Tests
                     Console.WriteLine(chr);
                 }
             }
+        }
+
+        [TestMethod]
+        public void Run_InvalidFilePath_FileNotFoundException()
+        {
+            // arrange
+            var emptyFile = Path.Join(Path.GetTempPath(), Path.GetRandomFileName());
+            
+            // act
+            Action act = () => new Parser(emptyFile);
+
+            // assert
+            Assert.ThrowsException<FileNotFoundException>(act);
         }
 
         [TestCleanup]
