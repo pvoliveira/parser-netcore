@@ -26,20 +26,18 @@ namespace TDD.Tests
             var fileBytes = Encoding.UTF8.GetBytes("line1\nline2");
             File.WriteAllBytes(this.tmpFilePath, fileBytes);
 
-            using(var parser = new Parser(this.tmpFilePath))
-            {
+            var parser = new Parser(this.tmpFilePath);
             
-                Func<byte[], string> func = (raw) => Encoding.UTF8.GetString(raw);
+            Func<byte[], string> func = (raw) => Encoding.UTF8.GetString(raw);
 
-                // act
-                var results = parser.Run(func);
+            // act
+            var results = parser.Run(func);
 
-                // assert
-                Assert.IsNotNull(results);
-                foreach (var chr in results)
-                {
-                    Console.WriteLine(chr);
-                }
+            // assert
+            Assert.IsNotNull(results);
+            foreach (var chr in results)
+            {
+                Console.WriteLine(chr);
             }
         }
 
@@ -54,6 +52,12 @@ namespace TDD.Tests
 
             // assert
             Assert.ThrowsException<FileNotFoundException>(act);
+        }
+
+        [TestMethod]
+        public void RunWithChannels_ValidFile_NoException()
+        {
+            
         }
 
         [TestCleanup]

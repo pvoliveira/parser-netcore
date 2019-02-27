@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace TDD.FileReader
 {
-    public class Parser: IDisposable
+    public class Parser
     {
         private int bufferLength;
-        private FileStream file;
         private string path;
 
 
@@ -22,23 +24,36 @@ namespace TDD.FileReader
             this.path = path;
         }
 
-        public void Dispose()
+        public IEnumerable<object> Run(Func<byte[], string> run)
         {
-            if (file != null)
-            {
-                file.Close();
+            using(var file = File.Open(this.path, FileMode.Open))
+            {            
+                byte[] buffer = new byte[this.bufferLength];
+                while (file.Read(buffer, 0, this.bufferLength) > 0)
+                {
+                    yield return run(buffer);
+                }
             }
         }
 
-        public IEnumerable<object> Run(Func<byte[], string> run)
+        public ChannelReader<string> RunAsync(Func<byte[], string> run, CancellationToken cancellationToken = default(CancellationToken))
         {
-            file = File.Open(this.path, FileMode.Open);
+            var channel = Channel.CreateBounded<string>(1);
             
-            byte[] buffer = new byte[this.bufferLength];
-            while (file.Read(buffer, 0, this.bufferLength) > 0)
-            {
-                yield return run(buffer);
-            }
+            Task.Run(async () => {
+                using(var file = File.Open(this.path, FileMode.Open))
+                {            
+                    byte[] buffer = new byte[this.bufferLength];
+                    while (file.Read(buffer, 0, this.bufferLength) > 0)
+                    {
+                        var v = run(buffer);
+                        while(await channel.Writer.WaitToWriteAsync(cancellationToken))
+                            if (channel.Writer.TryWrite(v)) break;
+                    }
+                }
+            }, cancellationToken);
+
+            return channel;
         }
     }
 }
